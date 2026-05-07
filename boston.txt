@@ -39,19 +39,41 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-model = Sequential()
-model.add(Dense(1, input_shape=(X_train.shape[1],), activation='linear'))
+# Step 6: Build Deep Neural Network
 
+model = Sequential([
+    
+    # Input Layer
+    tf.keras.Input(shape=(X_train.shape[1],)),
+    
+    # Hidden Layers
+    Dense(64, activation='relu'),
+    Dense(32, activation='relu'),
+    Dense(16, activation='relu'),
+    
+    # Output Layer
+    Dense(1)
+])
+
+# Compile the model
 model.compile(
     optimizer='adam',
     loss='mse',
     metrics=['mae']
 )
 
+# Display model summary
+model.summary()
+
+
+# Step 7: Train Model
+
 history = model.fit(
-    X_train, y_train,
+    X_train,
+    y_train,
     epochs=100,
-    validation_split=0.05,
+    batch_size=16,
+    validation_split=0.2,
     verbose=1
 )
 
