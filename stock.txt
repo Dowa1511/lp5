@@ -1,0 +1,71 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, SimpleRNN
+
+#2. Load Dataset
+df = pd.read_csv("Google_Stock_Price.csv", thousands=',')
+
+# Take Open column
+data = df['Open'].values.reshape(-1, 1)
+
+scaler = MinMaxScaler(feature_range=(0,1))
+# Clean non-numeric values like 'GOOGL' / NaN from Open column, then scale
+data = pd.to_numeric(df['Open'], errors='coerce').dropna().values.reshape(-1, 1)
+data_scaled = scaler.fit_transform(data)
+
+train_size = int(len(data_scaled) * 0.8)
+
+train_data = data_scaled[:train_size]
+test_data = data_scaled[train_size:]
+
+def create_dataset(dataset):
+    X = []
+    y = []
+    
+    for i in range(60, len(dataset)):
+        X.append(dataset[i-60:i, 0])
+        y.append(dataset[i, 0])
+    
+    return np.array(X), np.array(y)
+
+X_train, y_train = create_dataset(train_data)
+X_test, y_test = create_dataset(test_data)
+
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+model = Sequential()
+
+model.add(SimpleRNN(50, return_sequences=True, input_shape=(60,1)))
+model.add(SimpleRNN(50))
+model.add(Dense(1))
+
+model.compile(optimizer='adam', loss='mean_squared_error')
+
+model.summary()
+
+-------------------
+model.fit(X_train, y_train, epochs=20, batch_size=32)
+
+-------------------
+
+predicted = model.predict(X_test)
+
+predicted = scaler.inverse_transform(predicted)
+real = scaler.inverse_transform(y_test.reshape(-1,1))
+
+-------------------------------------------------
+
+plt.plot(real, color='red', label='Real Price')
+plt.plot(predicted, color='blue', label='Predicted Price')
+
+plt.title("Google Stock Price Prediction (RNN)")
+plt.xlabel("Time")
+plt.ylabel("Price")
+plt.legend()
+plt.show()
+
